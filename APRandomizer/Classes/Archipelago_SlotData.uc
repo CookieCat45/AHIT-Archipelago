@@ -38,6 +38,8 @@ var bool NoPaintingSkips;
 var int CTRLogic;
 var bool UmbrellaLogic;
 var bool DeathLink;
+var int DeathLinkAmnesty;
+var int DWDeathLinkAmnesty;
 var bool HatItems;
 
 var bool DLC1;

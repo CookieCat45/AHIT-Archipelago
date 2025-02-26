@@ -22,6 +22,11 @@ exec function ap_show_connection_info()
 	`AP.ScreenMessage("Current target host: "$`AP.SlotData.Host $":" $`AP.SlotData.Port);
 }
 
+exec function test_clienttravel(string URL, ETravelType TravelType, optional bool bSeamless = false, optional init Guid MapPackageGuid)
+{
+	`AP.GetALocalPlayerController().ClientTravel(URL, TravelType, bSeamless, MapPackageGuid);
+}
+
 exec function ap_say(string message)
 {
 	local JsonObject json;

@@ -5,7 +5,7 @@ class Archipelago_GameMod extends GameMod
 	config(Mods);
 
 `include(APRandomizer\Classes\Globals.uci);
-const SlotDataVersion = 11;
+const SlotDataVersion = 12;
 
 var Archipelago_TcpLink Client;
 var Archipelago_SlotData SlotData;
@@ -1450,6 +1450,8 @@ function LoadSlotData(JsonObject json)
 	SlotData.NoPaintingSkips = json.GetBoolValue("NoPaintingSkips");
 	SlotData.CTRLogic = json.GetIntValue("CTRLogic");
 	SlotData.DeathLink = json.GetBoolValue("death_link");
+	SlotData.DeathLinkAmnesty = json.GetIntValue("death_link_amnesty");
+	SlotData.DWDeathLinkAmnesty = json.GetIntValue("dw_death_link_amnesty");
 	SlotData.Seed = json.GetStringValue("SeedNumber");
 	SlotData.SeedName = json.GetStringValue("SeedName");
 	SlotData.HatItems = json.GetBoolValue("HatItems");
@@ -3764,12 +3766,31 @@ function OnPreBreakableBreak(Actor Breakable, Pawn Breaker)
 
 function OnPlayerDeath(Pawn Player)
 {
-	local string message, deathString;
+	local string message, deathString, amnestyType;
+	local int CurrentAmnesty, TotalAmnesty;
+	
 	if (!IsDeathLinkEnabled() || !IsArchipelagoEnabled() || !IsFullyConnected())
 		return;
+
+	// pick amnesty type based on if a death wish is active
+	if (class'Hat_SnatcherContract_DeathWish'.static.IsAnyActive(false)) {
+		amnestyType = "DWCurrentDeathLinkAmnesty";
+		TotalAmnesty = SlotData.DWDeathLinkAmnesty;
+	} else {
+		amnestyType = "CurrentDeathLinkAmnesty";
+		TotalAmnesty = SlotData.DeathLinkAmnesty;
+	}
+	CurrentAmnesty = GetAPBits(amnestyType, TotalAmnesty);
+	DebugMessage("[DeathLink] Amnesty type is " $ amnestyType $ " with " $ CurrentAmnesty $ " of " $ TotalAmnesty $ " left");
+	
+	if (TotalAmnesty != 0 && CurrentAmnesty > 0) {
+		SetAPBits(amnestyType, CurrentAmnesty - 1);
+		return;
+	}
 	
 	// commit myurder
 	DeathLinked = true;
+	SetAPBits(amnestyType, TotalAmnesty);
 	message = "[{`cmd`:`Bounce`,`tags`:[`DeathLink`],`data`:{`time`:" $float(class'Hat_Math_Base'.static.GetApproximateTimeStamp_Now()) $",`source`:" $"`" $SlotData.SlotName $"`" $"}}]";
 	message = Repl(message, "`", "\"");
 	client.SendBinaryMessage(message);
